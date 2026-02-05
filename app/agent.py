@@ -26,40 +26,59 @@ def mcp_notify(message: str):
     """
     return asyncio.run(mcp_send_notification(message))
 
-def run_agent():
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0
+
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0
+)
+
+tools = [mcp_availability, mcp_notify]
+
+prompt = PromptTemplate(
+    input_variables=["input", "agent_scratchpad"],
+    template=(
+        "You are a personal scheduling assistant.\n"
+        "You can reason step-by-step and use tools.\n\n"
+        "Rules:\n"
+        "- ALWAYS use tools for scheduling decisions\n"
+        "- If rescheduling is required, ASK for confirmation\n"
+        "- Execute actions ONLY after confirmation\n\n"
+        "{input}\n\n"
+        "{agent_scratchpad}"
     )
+)
 
-    tools = [mcp_availability, mcp_notify]
+agent = create_tool_calling_agent(
+    llm=llm,
+    tools=tools,
+    prompt=prompt
+)
 
-    prompt = PromptTemplate(
-        input_variables=["input", "agent_scratchpad"],
-        template=(
-            "You are a personal scheduling assistant.\n"
-            "You can reason step-by-step and use tools.\n\n"
-            "Rules:\n"
-            "- ALWAYS use tools for scheduling decisions\n"
-            "- If rescheduling is required, ASK for confirmation\n"
-            "- Execute actions ONLY after confirmation\n\n"
-            "{input}\n\n"
-            "{agent_scratchpad}"
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    verbose=True
+)
+
+def process_message(user_input: str):
+    now = datetime.now()
+    resolved_date = None
+
+    if "tomorrow" in user_input.lower():
+        resolved_date = (now + timedelta(days=1)).strftime("%m-%d-%Y")
+    elif "today" in user_input.lower():
+        resolved_date = now.strftime("%m-%d-%Y")
+
+    if resolved_date:
+        user_input += (
+            f"\n\nIMPORTANT:\n"
+            f"- Today's date is {now.strftime('%m-%d-%Y')}\n"
+            f"- Use date: {resolved_date}\n"
         )
-    )
+    result = agent_executor.invoke({"input": user_input})
+    return result["output"]
 
-    agent = create_tool_calling_agent(
-        llm=llm,
-        tools=tools,
-        prompt=prompt
-    )
-
-    agent_executor = AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=True
-    )
-
+def run_agent():
     print("Scheduling assistant ready. Type 'exit' to stop.\n")
     last_date = None
     last_start = None
