@@ -1,0 +1,12 @@
+python-dotenv
+langchain
+langchain_community
+langchain-openai
+langchain-core
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+faiss-cpu
+pytz
+langchain-text-splitters
