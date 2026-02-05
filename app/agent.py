@@ -4,7 +4,7 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import PromptTemplate
 from datetime import datetime, timedelta
 from langchain.tools import tool
-from assistant_mcp.client import mcp_check_availability, mcp_send_notification
+from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights
 from app.state import agent_state
 from app.calendar_reader import create_calendar_event, update_calendar_event
 from rag.retriever import get_relevant_context
@@ -26,13 +26,21 @@ def mcp_notify(message: str):
     """
     return asyncio.run(mcp_send_notification(message))
 
+@tool
+def flight_search_tool(origin: str, destination: str, date: str):
+    """
+    Search available flights between two cities on a given date.
+    Always provide origin city, destination city, and date.
+    """
+    return asyncio.run(mcp_search_flights(origin, destination, date))
+
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0
 )
 
-tools = [mcp_availability, mcp_notify]
+tools = [mcp_availability, mcp_notify, flight_search_tool]
 
 prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad"],
@@ -43,6 +51,7 @@ prompt = PromptTemplate(
         "- ALWAYS use tools for scheduling decisions\n"
         "- If rescheduling is required, ASK for confirmation\n"
         "- Execute actions ONLY after confirmation\n\n"
+        "- If user asks about flights or travel options, use search_flights_tool\n"
         "{input}\n\n"
         "{agent_scratchpad}"
     )
@@ -57,7 +66,7 @@ agent = create_tool_calling_agent(
 agent_executor = AgentExecutor(
     agent=agent,
     tools=tools,
-    verbose=True
+    verbose=True,
 )
 
 def process_message(user_input: str):
@@ -139,7 +148,7 @@ def run_agent():
                     )
 
                 # 4️⃣ NOTIFY
-                mcp_notify.run({"message": message})
+                mcp_send_notification(message)
                 print(f"\nAssistant: {message}\n")
 
                 agent_state.clear()
@@ -188,14 +197,19 @@ def run_agent():
         # 📚 RAG CONTEXT
         # ============================
         rag_context = get_relevant_context(user_input)
-        user_input += f"\n\nContext:\n{rag_context}\n"
-
+        user_input += (
+            "\n\nBackground knowledge (policies, preferences, patterns):\n"
+            f"{rag_context}\n"
+            "Use this context when making decisions."
+        )
         # ============================
         # 🧠 RUN AGENT
         # ============================
         if not agent_state.get("awaiting_confirmation"):
             result = agent_executor.invoke({"input": user_input})
             output = result["output"]
+        if isinstance(output, dict):
+            output = str(output)
         else:
             continue
         
@@ -212,7 +226,7 @@ def run_agent():
         if resolved_date:
             last_date = resolved_date
 
-        if isinstance(output, dict) and output.get("status") == "NEEDS_CONFIRMATION":
+        if isinstance(output, dict) and output.get("action") in ["ASK_USER", "RESCHEDULE_EXISTING"]:
             agent_state["awaiting_confirmation"] = True
             agent_state["new_meeting"] = {
                 "date": last_date,

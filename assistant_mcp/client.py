@@ -1,8 +1,6 @@
 from fastmcp import Client
 
-# Port must match server
 mcp_client = Client("http://localhost:8002/mcp")
-
 
 async def mcp_check_availability(date, start, end, urgent=False):
     async with mcp_client:
@@ -16,13 +14,22 @@ async def mcp_check_availability(date, start, end, urgent=False):
             }
         )
 
-
 async def mcp_send_notification(message):
     async with mcp_client:
         return await mcp_client.call_tool(
             "send_notification_tool",
+            {"message": message}
+        )
+
+async def mcp_search_flights(origin, destination, date):
+    async with mcp_client:
+        return await mcp_client.call_tool(
+            "search_flights_tool",
             {
-                "message": message
+                "origin": origin,
+                "destination": destination,
+                "date": date
             }
         )
+
 

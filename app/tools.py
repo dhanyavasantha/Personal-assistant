@@ -4,7 +4,8 @@ from app.availability import evaluate_availability
 from app.calendar_reader import get_events_for_day, create_calendar_event
 from datetime import datetime, timedelta
 from app.state import agent_state
-from twilio.rest import Client
+from twilio.rest import Client as TwilioClient
+from amadeus import Client as AmadeusClient, ResponseError
 
 def normalize_time(t: str) -> str:
     t = t.strip().upper()
@@ -138,14 +139,14 @@ TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_FROM = os.getenv("TWILIO_FROM_NUMBER")
 TWILIO_TO = os.getenv("TWILIO_TO_NUMBER")
 
-client = Client(TWILIO_SID, TWILIO_TOKEN)
+twilio_client = TwilioClient(TWILIO_SID, TWILIO_TOKEN)
 
 def send_notification(message: str):
     if not TWILIO_TO:
         print("⚠ TWILIO_TO_NUMBER missing")
         return
     
-    client.messages.create(
+    twilio_client.messages.create(
         body=message,
         from_=TWILIO_FROM,
         to=TWILIO_TO
@@ -158,3 +159,60 @@ def send_notification_tool(message: str) -> str:
     """
     send_notification(message)
     return "Notification sent"
+
+# =========================
+# ✈ FLIGHT SEARCH TOOL
+# =========================
+
+AMADEUS_KEY = os.getenv("AMADEUS_API_KEY")
+AMADEUS_SECRET = os.getenv("AMADEUS_API_SECRET")
+
+amadeus = AmadeusClient(
+    client_id=AMADEUS_KEY,
+    client_secret=AMADEUS_SECRET
+)
+
+@tool
+def search_flights_tool(origin: str, destination: str, date: str) -> str:
+    """
+    Search flight options between two cities or airports.
+    Example origin: NYC
+    Example destination: IAD
+    Date format: YYYY-MM-DD
+    """
+
+    try:
+        origin_code = origin.strip().upper()
+        dest_code = destination.strip().upper()
+        response = amadeus.shopping.flight_offers_search.get(
+            originLocationCode=origin_code,
+            destinationLocationCode=dest_code,
+            departureDate=date,
+            adults=1,
+            max=5
+        )
+
+        flights = response.data
+
+        if not flights:
+            return "No flights found."
+
+        results = []
+
+        for f in flights:
+            airline = f["validatingAirlineCodes"][0]
+            price = f["price"]["total"]
+
+            dep = f["itineraries"][0]["segments"][0]["departure"]["at"]
+            arr = f["itineraries"][0]["segments"][-1]["arrival"]["at"]
+
+            duration = f["itineraries"][0]["duration"]
+
+            results.append(
+                f"{airline} | {dep} → {arr} | Duration: {duration} | ${price}"
+            )
+
+        return "\n".join(results)
+
+    except ResponseError as error:
+        return f"Flight search failed: {error}"
