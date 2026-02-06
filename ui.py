@@ -147,7 +147,7 @@ elif mode == "Book Meeting":
         end_time = st.time_input("End Time", key="meet_end")
 
     with col4:
-        urgent = st.checkbox("Urgent", key="meet_urgent")
+        urgent = st.checkbox("Important", key="meet_urgent")
 
     if st.button("Book Meeting", key="meet_btn"):
 

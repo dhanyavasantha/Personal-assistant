@@ -145,7 +145,7 @@ def check_availability_tool(
             "end_time": end_time,
             "notify": urgent,
             "notification_message": (
-                f"🚨 Urgent meeting booked: {date} {start_time}–{end_time}"
+                f"🚨 Important meeting booked: {date} {start_time}–{end_time}"
                 if urgent else None
             )
         }
