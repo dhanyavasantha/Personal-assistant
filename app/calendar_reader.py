@@ -140,4 +140,11 @@ def update_calendar_event(event_id: str, new_start: str, new_end: str):
 
     return updated_event["id"]
 
+def delete_calendar_event(event_id: str):
+    service = get_calendar_service()
+    service.events().delete(
+        calendarId='primary',
+        eventId=event_id
+    ).execute()
+
 

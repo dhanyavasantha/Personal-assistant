@@ -13,3 +13,4 @@ langchain-text-splitters
 streamlit
 amadeus
 resend
+python-dateutil

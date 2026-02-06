@@ -182,7 +182,7 @@ elif mode == "Search Flights":
 
     if st.button("Search Flights", key="flight_btn"):
 
-        date_str = travel_date.strftime("%Y-%m-%d")
+        date_str = travel_date.strftime("%m-%d-%Y")
 
         prompt = f"search flights from {from_city} to {to_city} on {date_str}"
 

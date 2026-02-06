@@ -1,3 +1,4 @@
+from unittest import result
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
@@ -6,11 +7,17 @@ from datetime import datetime, timedelta
 from langchain.tools import tool
 from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar
 from app.state import agent_state
-from app.calendar_reader import create_calendar_event, update_calendar_event
+from app.tools import cancel_meeting_tool
+from app.calendar_reader import get_events_for_day, create_calendar_event, update_calendar_event
 from rag.retriever import get_relevant_context
 import asyncio
+import re
+from dateutil import parser
+
 
 load_dotenv()
+
+chat_history = []
 
 @tool
 def mcp_availability(date: str, start_time: str, end_time: str, urgent: bool=False):
@@ -31,8 +38,15 @@ def flight_search_tool(origin: str, destination: str, date: str):
     """
     Search available flights between two cities on a given date.
     Always provide origin city, destination city, and date.
+    Converts MM-DD-YYYY → YYYY-MM-DD for Amadeus.
     """
-    return asyncio.run(mcp_search_flights(origin, destination, date))
+    try:
+        # convert to Amadeus format
+        parsed = datetime.strptime(date, "%m-%d-%Y")
+        amadeus_date = parsed.strftime("%Y-%m-%d")
+    except:
+        amadeus_date = date  # fallback
+    return asyncio.run(mcp_search_flights(origin, destination, amadeus_date))
 
 @tool
 def show_calendar(date: str):
@@ -49,19 +63,22 @@ llm = ChatOpenAI(
     temperature=0
 )
 
-tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar]
+tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar, cancel_meeting_tool]
 
 prompt = PromptTemplate(
-    input_variables=["input", "agent_scratchpad"],
+    input_variables=["input", "agent_scratchpad", "chat_history"],
     template=(
         "You are a personal scheduling assistant.\n"
+        "Conversation so far:\n"
+        "{chat_history}\n\n"
         "You can reason step-by-step and use tools.\n\n"
         "Rules:\n"
         "- ALWAYS use tools for scheduling decisions\n"
         "- If rescheduling is required, ASK for confirmation\n"
         "- Execute actions ONLY after confirmation\n\n"
         "- If user asks about flights or travel options, use search_flights_tool\n"
-        "- If user asks about schedule or calendar, use show_calendar_tool\n"
+        "- If user asks about schedule or calendar, use show_calendar\n"
+        "- If user asks to cancel or delete a meeting, use cancel_meeting_tool\n"
         "{input}\n\n"
         "{agent_scratchpad}"
     )
@@ -79,22 +96,78 @@ agent_executor = AgentExecutor(
     verbose=True,
 )
 
+def resolve_natural_date(text: str):
+    try:
+        parsed = parser.parse(text, fuzzy=True)
+        return parsed.strftime("%m-%d-%Y")
+    except:
+        return None
+    
+def resolve_weekday(text: str):
+    weekdays = {
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
+        "sunday": 6,
+    }
+
+    today = datetime.now()
+
+    for name, num in weekdays.items():
+        if name in text:
+            delta = (num - today.weekday() + 7) % 7
+            if "next" in text or delta == 0:
+                delta += 7
+            target = today + timedelta(days=delta)
+            return target.strftime("%m-%d-%Y")
+
+    return None
+
+
 def process_message(user_input: str):
     now = datetime.now()
     resolved_date = None
+    lower = user_input.lower()
 
-    if "tomorrow" in user_input.lower():
+    # ---------- TODAY / TOMORROW ----------
+    if "tomorrow" in lower:
         resolved_date = (now + timedelta(days=1)).strftime("%m-%d-%Y")
-    elif "today" in user_input.lower():
+
+    elif "today" in lower:
         resolved_date = now.strftime("%m-%d-%Y")
+
+    # ---------- WEEKDAYS ----------
+    if not resolved_date:
+        weekday_date = resolve_weekday(lower)
+        if weekday_date:
+            resolved_date = weekday_date
+
+        # ---------- NATURAL LANGUAGE ----------
+    if not resolved_date:
+        match = re.search(
+            r"\bon\s([a-z0-9 ,\-]+?)(?:\sfrom|\sto|\sat|$)",
+            lower
+       )
+        if match:
+            natural = match.group(1).strip()
+            parsed = resolve_natural_date(natural)
+            if parsed:
+                resolved_date = parsed
 
     if resolved_date:
         user_input += (
             f"\n\nIMPORTANT:\n"
             f"- Today's date is {now.strftime('%m-%d-%Y')}\n"
+            f"- Always use MM-DD-YYYY format.\n"
             f"- Use date: {resolved_date}\n"
         )
-    result = agent_executor.invoke({"input": user_input})
+    result = agent_executor.invoke({"input": user_input, "chat_history": chat_history})
+    # save memory
+    chat_history.append(f"User: {user_input}")
+    chat_history.append(f"Assistant: {result['output']}")
     return result["output"]
 
 def run_agent():
