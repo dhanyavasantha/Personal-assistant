@@ -188,7 +188,6 @@ streamlit run ui.py
 
 ## 🔮 Future Improvements
 
-- Multi-user authentication  
 - Flight booking  
 - Hotel booking
 
