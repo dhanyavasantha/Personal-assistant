@@ -4,7 +4,7 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import PromptTemplate
 from datetime import datetime, timedelta
 from langchain.tools import tool
-from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights
+from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar
 from app.state import agent_state
 from app.calendar_reader import create_calendar_event, update_calendar_event
 from rag.retriever import get_relevant_context
@@ -34,13 +34,22 @@ def flight_search_tool(origin: str, destination: str, date: str):
     """
     return asyncio.run(mcp_search_flights(origin, destination, date))
 
+@tool
+def show_calendar(date: str):
+    """
+    Show all calendar events for a given date.
+    Use this when the user asks to see their schedule or calendar.
+    Date format: MM-DD-YYYY
+    """
+    return asyncio.run(mcp_show_calendar(date))
+
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0
 )
 
-tools = [mcp_availability, mcp_notify, flight_search_tool]
+tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar]
 
 prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad"],
@@ -52,6 +61,7 @@ prompt = PromptTemplate(
         "- If rescheduling is required, ASK for confirmation\n"
         "- Execute actions ONLY after confirmation\n\n"
         "- If user asks about flights or travel options, use search_flights_tool\n"
+        "- If user asks about schedule or calendar, use show_calendar_tool\n"
         "{input}\n\n"
         "{agent_scratchpad}"
     )

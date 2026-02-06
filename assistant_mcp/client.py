@@ -32,4 +32,11 @@ async def mcp_search_flights(origin, destination, date):
             }
         )
 
-
+async def mcp_show_calendar(date: str):
+    async with mcp_client:
+        return await mcp_client.call_tool(
+            "show_calendar_tool",
+            {
+                "date": date
+            }
+        )
