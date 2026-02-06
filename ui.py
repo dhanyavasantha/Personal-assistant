@@ -4,14 +4,86 @@ from app.agent import process_message
 
 st.set_page_config(page_title="Personal Assistant", layout="wide")
 
-# ---------- SESSION STATE ----------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# ---------- CUSTOM CSS ----------
+st.markdown("""
+<style>
 
-# ---------- TITLE ----------
-st.title("🤖 Personal Assistant")
+/* ---------- PAGE BACKGROUND ---------- */
+.stApp {
+    background: linear-gradient(135deg, #f5f7fa, #e4ecf7);
+}
 
-# ---------- MODE SELECT ----------
+/* STICKY HEADER */
+.sticky-header {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #f7f9fc, #e9f0fa);
+    z-index: 999;
+    padding-top: 10px;
+}
+
+/* ---------- TITLE ---------- */
+.main-title {
+    text-align: center;
+    font-size: 48px;
+    font-weight: 700;
+    color: #1F4E79;
+}
+
+/* ---------- SUBTITLE ---------- */
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: #5D6D7E;
+    margin-bottom: 15px;
+}
+
+/* ---------- RADIO BUTTON STYLE ---------- */
+div[role="radiogroup"] > label {
+    background-color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #d0d7e2;
+    margin-right: 10px;
+    transition: 0.3s;
+}
+
+div[role="radiogroup"] > label:hover {
+    background-color: #d6e4ff;
+    border-color: #2E86C1;
+}
+
+
+/* ---------- CHAT INPUT ---------- */
+.stTextInput > div > div > input {
+    border-radius: 20px;
+    padding: 12px;
+    border: 1px solid #bfc9d9;
+}
+
+/* ---------- RESPONSE BOX ---------- */
+.response-box {
+    background-color: #E8F6F3;
+    padding: 15px;
+    border-radius: 15px;
+    border-left: 5px solid #1ABC9C;
+    margin-top: 15px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# ---------- STICKY HEADER ----------
+st.markdown('<div class="sticky-header">', unsafe_allow_html=True)
+
+st.markdown('<div class="main-title">🤖 IntelliAssist</div>', unsafe_allow_html=True)
+
+st.markdown(
+'<div class="subtitle">Hi there! 👋 I’m IntelliAssist — your intelligent personal assistant for intelligent scheduling, seamless calendar management, and smart travel planning.</div>',
+unsafe_allow_html=True
+)
+
 mode = st.radio(
     "Select Mode",
     ["Chat", "Book Meeting", "Search Flights"],
@@ -20,6 +92,11 @@ mode = st.radio(
 )
 
 st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- SESSION STATE ----------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # ======================================================
 # CHAT MODE
