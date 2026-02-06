@@ -1,8 +1,8 @@
-🤖 IntelliAssist – AI Personal Scheduling & Travel Assistant
+##🤖 IntelliAssist – AI Personal Scheduling & Travel Assistant
 
 IntelliAssist is an AI-powered personal assistant that helps users manage their calendar, meetings, and travel plans using natural language.
 It combines LLM reasoning, RAG (Retrieval-Augmented Generation), MCP tools, and a Streamlit UI to deliver a smart, context-aware assistant.
-
+---
 🚀 Features
 📅 Smart Scheduling
 
