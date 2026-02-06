@@ -1,82 +1,61 @@
-🤖 IntelliAssist – AI Personal Scheduling & Travel Assistant
+# 🤖 IntelliAssist – AI Personal Scheduling & Travel Assistant
 
-IntelliAssist is an AI-powered personal assistant that helps users manage their calendar, meetings, and travel plans using natural language.
-It combines LLM reasoning, RAG (Retrieval-Augmented Generation), MCP tools, and a Streamlit UI to deliver a smart, context-aware assistant.
+IntelliAssist is an **AI-powered personal assistant** that helps users manage their calendar, meetings, and travel plans using natural language.  
+It combines **LLM reasoning, RAG (Retrieval-Augmented Generation), MCP tools, and a Streamlit UI** to deliver a smart, context-aware assistant.
 
-🚀 Features
-📅 Smart Scheduling
+---
 
-Book meetings using natural language
+## 🚀 Features
 
-Detect conflicts automatically
+### 📅 Smart Scheduling
+- Book meetings using natural language  
+- Detect conflicts automatically  
+- Suggest rescheduling options  
+- Weekend & working-hour validation  
+- Urgent meeting handling  
 
-Suggest rescheduling options
+### 🗓 Calendar Management
+- View calendar for any date  
+- Cancel meetings  
+- Update existing events  
+- Conflict detection  
 
-Weekend & working-hour validation
+### ✈ Travel Assistance
+- Search flights between cities  
+- Natural language date support (e.g., “next Tuesday”, “tomorrow”)  
+- Integration with Amadeus Flight API  
 
-Urgent meeting handling
+### 🧠 Intelligent Reasoning
+- Natural language understanding  
+- Context retention  
+- Multi-step reasoning  
+- Tool-calling via LangChain Agents  
 
-🗓 Calendar Management
+### 📚 RAG (Retrieval Augmented Generation)
+- Uses policies, patterns, and preferences  
+- Improves decision accuracy  
+- Personalized assistant behavior  
 
-View calendar for any date
+### 🔗 MCP (Model Context Protocol)
+- Middleware for tool execution  
+- Async and secure tool communication  
+- Scalable architecture  
+- Decouples LLM from APIs  
 
-Cancel meetings
+### 🖥 Interactive UI
+- Streamlit-based interface  
+- Chat mode  
+- Booking mode  
+- Flight search mode  
 
-Update existing events
+### 🔔 Notifications
+- Email notifications for urgent bookings and changes  
 
-Conflict detection
+---
 
-✈ Travel Assistance
+## 🏗️ Project Architecture
 
-Search flights between cities
-
-Natural language date support (e.g., “next Tuesday”, “tomorrow”)
-
-Integration with Amadeus Flight API
-
-🧠 Intelligent Reasoning
-
-Natural language understanding
-
-Context retention
-
-Multi-step reasoning
-
-Tool-calling via LangChain Agents
-
-📚 RAG (Retrieval Augmented Generation)
-
-Uses policies, patterns, and preferences
-
-Improves decision accuracy
-
-Personalized assistant behavior
-
-🔗 MCP (Model Context Protocol)
-
-Middleware for tool execution
-
-Async and secure tool communication
-
-Scalable architecture
-
-Decouples LLM from APIs
-
-🖥 Interactive UI
-
-Streamlit-based interface
-
-Chat mode
-
-Booking mode
-
-Flight search mode
-
-🔔 Notifications
-
-Email notifications for urgent bookings and changes
-
-🏗️ Project Architecture
+```bash
 Personal-Assistant/
 │
 ├── app/
@@ -97,126 +76,123 @@ Personal-Assistant/
 ├── data/
 │   ├── patterns/
 │   │   └── past_scheduling_patterns.md   # Historical scheduling behavior
-│   │
 │   ├── policies/
-│   │   └── company_travel_policy.md       # Travel rules & constraints
-│   │
+│   │   └── company_travel_policy.md      # Travel rules & constraints
 │   └── preferences/
-│       └── user_preferences.md           # User-specific preferences
+│       └── user_preferences.md          # User-specific preferences
 │
 ├── rag/
 │   ├── faiss_index/
 │   │   ├── index.faiss        # Vector index
 │   │   └── index.pkl          # Metadata store
-│   │
 │   ├── ingest.py              # Document ingestion pipeline
 │   ├── retriever.py           # Context retrieval logic
 │   ├── test_retriever.py      # Retriever tests
 │   └── vector_store.py        # FAISS vector store management
 │
-├── ui.py                       # Streamlit user interface
+├── ui.py                      # Streamlit user interface
 ├── .gitignore
 └── README.md
+```
 
-🛠 Tech Stack
+---
 
-Python
+## 🛠 Tech Stack
 
-LangChain Agents
+- Python  
+- LangChain Agents  
+- OpenAI / LLM  
+- FAISS Vector Database  
+- Google Calendar API  
+- Amadeus Flight API  
+- Streamlit  
+- MCP (Model Context Protocol)  
+- Resend Email API  
+- Dateutil  
 
-OpenAI / LLM
+---
 
-FAISS Vector Database
+## 🔄 How It Works
 
-Google Calendar API
+1. **User Input** – Natural language query from UI  
+2. **Agent Processing** – LLM decides whether to reason or call a tool  
+3. **RAG Retrieval** – Policies, preferences, and patterns are fetched  
+4. **Tool Execution** – Calendar / Flight / Notification tools are called using MCP  
+5. **Context Memory** – Conversation and dates are remembered  
+6. **Response Generation** – Assistant returns structured answer  
 
-Amadeus Flight API
+---
 
-Streamlit
+## 🧠 RAG Knowledge Sources
 
-MCP (Model Context Protocol)
+- Company travel policies  
+- Past scheduling patterns  
+- User preferences  
+- Behavioral rules  
 
-Resend Email API
+This enables **smarter decisions**, not just generic LLM replies.
 
-Dateutil
+---
 
-🔄 How It Works
+## 🖥️ User Interface
 
-User Input – Natural language query from UI
+Built using **Streamlit**, offering:
 
-Agent Processing – LLM decides whether to reason or call a tool
+- Chat mode  
+- Meeting booking form  
+- Flight search form  
 
-RAG Retrieval – Policies, preferences, and patterns are fetched
+---
 
-Tool Execution – Calendar / Flight / Notification tools are called using MCP
+## ⚙️ Setup Instructions
 
-Context Memory – Conversation and dates are remembered
-
-Response Generation – Assistant returns structured answer
-
-🧠 RAG Knowledge Sources
-
-Company travel policies
-
-Past scheduling patterns
-
-User preferences
-
-Behavioral rules
-
-This enables smarter decisions, not just generic LLM replies.
-
-🖥️ User Interface
-
-Built using Streamlit, offering:
-
-Chat mode
-
-Meeting booking form
-
-Flight search form
-
-
-⚙️ Setup Instructions
-1. Clone Repository
+### 1. Clone Repository
+```bash
 git clone https://github.com/dhanyavasantha/Personal-assistant.git
+```
 
-
-2. Install Dependencies
+### 2. Install Dependencies
+```bash
 pip install -r app/requirements.txt
+```
 
-3. Environment Variables
+### 3. Environment Variables
 
-Create .env file:
+Create a `.env` file:
 
+```env
 OPENAI_API_KEY=
 AMADEUS_API_KEY=
 AMADEUS_API_SECRET=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
 RESEND_TO_EMAIL=
+```
 
-4. Run UI
+### 4. Run UI
+```bash
 streamlit run ui.py
+```
 
-📌 Example Queries
+---
 
-“Show my calendar for today”
+## 📌 Example Queries
 
-“Book a meeting tomorrow at 10 AM”
+- “Show my calendar for today”  
+- “Book a meeting tomorrow at 10 AM”  
+- “Book a meeting at 10 AM on Jan 23, 2026”  
+- “Cancel meeting from 11 to 12”  
+- “Search flights from NYC to IAD next Tuesday”  
 
-“Book a meeting at 10 AM on Jan 23, 2026”
+---
 
-“Cancel meeting from 11 to 12”
+## 🔮 Future Improvements
 
-“Search flights from NYC to IAD next Tuesday”
+- Multi-user authentication  
+- Flight booking  
 
-🔮 Future Improvements
+---
 
-Multi-user authentication
+## 👩‍💻 Author
 
-Flight booking
-
-👩‍💻 Author
-
-Dhanya Sri Vasantha
+**Dhanya Sri Vasantha**
