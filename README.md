@@ -190,6 +190,7 @@ streamlit run ui.py
 
 - Multi-user authentication  
 - Flight booking  
+- Hotel booking
 
 ---
 
