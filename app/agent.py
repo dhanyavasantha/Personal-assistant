@@ -210,8 +210,6 @@ def run_agent():
             output = result["output"]
         if isinstance(output, dict):
             output = str(output)
-        else:
-            continue
         
         try:
             steps = result.get("intermediate_steps", [])

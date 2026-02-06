@@ -1,10 +1,10 @@
 import os
 from langchain.tools import tool
 from app.availability import evaluate_availability
-from app.calendar_reader import get_events_for_day, create_calendar_event
+from app.calendar_reader import get_events_for_day, create_calendar_event, update_calendar_event
 from datetime import datetime, timedelta
 from app.state import agent_state
-from twilio.rest import Client as TwilioClient
+import resend
 from amadeus import Client as AmadeusClient, ResponseError
 
 def normalize_time(t: str) -> str:
@@ -133,32 +133,29 @@ def check_availability_tool(
 # =========================
 # 🔹 NOTIFICATION TOOL
 # =========================
-
-TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_FROM = os.getenv("TWILIO_FROM_NUMBER")
-TWILIO_TO = os.getenv("TWILIO_TO_NUMBER")
-
-twilio_client = TwilioClient(TWILIO_SID, TWILIO_TOKEN)
-
-def send_notification(message: str):
-    if not TWILIO_TO:
-        print("⚠ TWILIO_TO_NUMBER missing")
-        return
-    
-    twilio_client.messages.create(
-        body=message,
-        from_=TWILIO_FROM,
-        to=TWILIO_TO
-    )
+import resend
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 @tool
 def send_notification_tool(message: str) -> str:
-    """
-    Send an SMS notification to the user.
-    """
-    send_notification(message)
-    return "Notification sent"
+    """Send an email notification to the user."""
+    try:
+        print("Sending email via Resend...")
+
+        resend.Emails.send({
+            "from": os.getenv("RESEND_FROM_EMAIL"),
+            "to": [os.getenv("RESEND_TO_EMAIL")],
+            "subject": "Assistant Notification",
+            "html": f"<p>{message}</p>"
+        })
+
+        return "Notification email sent"
+
+    except Exception as e:
+        print("RESEND ERROR:", e)
+        return f"Notification failed: {str(e)}"
+
+    
 
 # =========================
 # ✈ FLIGHT SEARCH TOOL

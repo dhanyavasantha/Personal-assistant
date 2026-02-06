@@ -12,3 +12,4 @@ pytz
 langchain-text-splitters
 streamlit
 amadeus
+resend

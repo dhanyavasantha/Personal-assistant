@@ -42,16 +42,30 @@ def evaluate_availability(
     slot_start = parse_dt(f"{date} {start_time}")
     slot_end = parse_dt(f"{date} {end_time}")
 
-    # 1. Working hours (hard rule)
+    # 0. Weekend rule
+    if slot_start.weekday() >= 5:   # 5 = Saturday, 6 = Sunday
+        if urgent:
+            pass   # allow urgent override
+        else:
+            return {
+                "status": "CONFLICT",
+                "reasons": ["Weekend booking not allowed"],
+                "action": "REJECT"
+            }
+
+    # 1. Working hours (soft rule)
     work_start = parse_dt(f"{date} {WORK_START}")
     work_end = parse_dt(f"{date} {WORK_END}")
 
     if not (work_start <= slot_start and slot_end <= work_end):
-        return {
-            "status": "CONFLICT",
-            "reasons": ["Outside working hours"],
-            "action": "REJECT"
-        }
+        if urgent:
+            pass   # allow override
+        else:
+            return {
+                "status": "CONFLICT",
+                "reasons": ["Outside working hours"],
+                "action": "REJECT"
+            }
 
     # 2. Lunch (soft rule)
     lunch_start = parse_dt(f"{date} {LUNCH_START}")
@@ -67,7 +81,7 @@ def evaluate_availability(
                 "action": "ASK_USER"
             }
 
-    # 3. Existing meetings (hard rule)
+    # 3. Existing meetings (soft rule)
     for meeting in meetings:
         m_start = parse_dt(meeting["start"])
         m_end = parse_dt(meeting["end"])
