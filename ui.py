@@ -179,7 +179,7 @@ elif mode == "Search Flights":
 
     with col3:
         travel_date = st.date_input("Travel Date", key="flight_date")
-
+        
     if st.button("Search Flights", key="flight_btn"):
 
         date_str = travel_date.strftime("%m-%d-%Y")
