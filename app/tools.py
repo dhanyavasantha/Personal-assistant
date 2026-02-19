@@ -7,6 +7,7 @@ from app.state import agent_state
 import resend
 from amadeus import Client as AmadeusClient, ResponseError
 from dateutil import parser
+import json
 
 def normalize_time(t: str) -> str:
     t = t.strip().upper()
@@ -212,6 +213,7 @@ def search_flights_tool(origin: str, destination: str, date: str) -> str:
     Example origin: NYC
     Example destination: IAD
     Date format: YYYY-MM-DD
+    Returns structured flight data.
     """
 
     try:
@@ -242,11 +244,15 @@ def search_flights_tool(origin: str, destination: str, date: str) -> str:
 
             duration = f["itineraries"][0]["duration"]
 
-            results.append(
-                f"{airline} | {dep} → {arr} | Duration: {duration} | ${price}"
-            )
+            results.append({
+                "airline": airline,
+                "departure": dep,
+                "arrival": arr,
+                "duration": duration,
+                "price": price
+            })
 
-        return "\n".join(results)
+        return json.dumps(results)
 
     except ResponseError as error:
         return f"Flight search failed: {error}"
