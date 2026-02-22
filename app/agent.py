@@ -5,7 +5,7 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import PromptTemplate
 from datetime import datetime, timedelta
 from langchain.tools import tool
-from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar
+from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar, mcp_web_search
 from app.state import agent_state
 from app.tools import cancel_meeting_tool
 from app.calendar_reader import get_events_for_day, create_calendar_event, update_calendar_event
@@ -57,13 +57,28 @@ def show_calendar(date: str):
     """
     return asyncio.run(mcp_show_calendar(date))
 
+@tool
+def web_search(query: str):
+    """
+    Search the internet for real-time or up-to-date information.
+
+    Use this tool when:
+    - The user asks about current events
+    - The user asks about news
+    - The user asks about policies, airline rules, visa rules
+    - The user asks about factual information not stored locally
+    - The user asks about weather or recent updates
+
+    Always provide a complete natural language query.
+    """
+    return asyncio.run(mcp_web_search(query))
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0
 )
 
-tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar, cancel_meeting_tool]
+tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar, cancel_meeting_tool, web_search]
 
 prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad", "chat_history"],
@@ -77,6 +92,7 @@ prompt = PromptTemplate(
         "- If rescheduling is required, ASK for confirmation\n"
         "- Execute actions ONLY after confirmation\n\n"
         "- If user asks about flights or travel options, use search_flights_tool\n"
+        "- If the flight search tool returns structured data, return it exactly as-is without formatting\n"
         "- If user asks about schedule or calendar, use show_calendar\n"
         "- If user asks to cancel or delete a meeting, use cancel_meeting_tool\n"
         "{input}\n\n"
@@ -94,6 +110,7 @@ agent_executor = AgentExecutor(
     agent=agent,
     tools=tools,
     verbose=True,
+    return_intermediate_steps=True
 )
 
 def resolve_natural_date(text: str):
@@ -131,6 +148,38 @@ def process_message(user_input: str):
     now = datetime.now()
     resolved_date = None
     lower = user_input.lower()
+    # ✈ Handle flight requests directly via MCP (structured)
+    if "flight" in user_input.lower() or "travel" in user_input.lower():
+        
+        match = re.search(
+            r"from\s+([A-Za-z]{3})\s+to\s+([A-Za-z]{3})",
+            user_input
+        )
+        
+        if match:
+            origin = match.group(1).upper()
+            destination = match.group(2).upper()
+            
+            # resolve date normally using your existing logic
+            date = resolved_date if resolved_date else now.strftime("%m-%d-%Y")
+            
+            tool_result = asyncio.run(
+                mcp_search_flights(origin, destination, date)
+            )
+
+            # 🔓 Extract JSON from MCP wrapper
+            if hasattr(tool_result, "content") and tool_result.content:
+                raw_text = tool_result.content[0].text
+
+                import json
+                try:
+                    return json.loads(raw_text)
+                except Exception:
+                    # If not valid JSON, just return raw text
+                    return raw_text
+
+            return tool_result
+
 
     # ---------- TODAY / TOMORROW ----------
     if "tomorrow" in lower:
@@ -165,7 +214,17 @@ def process_message(user_input: str):
             f"- Use date: {resolved_date}\n"
         )
     result = agent_executor.invoke({"input": user_input, "chat_history": chat_history})
-    # save memory
+    output = result["output"]
+
+    # 🔥 Try parsing JSON from agent output (for flights)
+    import json
+
+    try:
+        parsed = json.loads(output)
+        if isinstance(parsed, list):
+            return parsed
+    except:
+        pass
     chat_history.append(f"User: {user_input}")
     chat_history.append(f"Assistant: {result['output']}")
     return result["output"]
