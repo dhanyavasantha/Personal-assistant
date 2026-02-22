@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from app.tools import check_availability_tool, send_notification_tool, search_flights_tool, show_calendar_tool
+from app.tools import check_availability_tool, send_notification_tool, search_flights_tool, show_calendar_tool, web_search_tool
 
 mcp = FastMCP("personal-assistant-mcp")
 
@@ -18,6 +18,10 @@ def flights(origin: str, destination: str, date: str):
 @mcp.tool(name="show_calendar_tool")
 def show_calendar(date: str):
     return show_calendar_tool.func(date)
+
+@mcp.tool(name="web_search_tool")
+def web_search(query: str):
+    return web_search_tool.func(query)
 
 if __name__ == "__main__":
     mcp.run(transport="http", port=8002)

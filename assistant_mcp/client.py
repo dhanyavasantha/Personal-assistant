@@ -41,3 +41,9 @@ async def mcp_show_calendar(date: str):
             }
         )
     
+async def mcp_web_search(query):
+    async with mcp_client:
+        return await mcp_client.call_tool(
+            "web_search_tool",
+            {"query": query}
+        )

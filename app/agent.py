@@ -5,7 +5,7 @@ from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import PromptTemplate
 from datetime import datetime, timedelta
 from langchain.tools import tool
-from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar
+from assistant_mcp.client import mcp_check_availability, mcp_send_notification, mcp_search_flights, mcp_show_calendar, mcp_web_search
 from app.state import agent_state
 from app.tools import cancel_meeting_tool
 from app.calendar_reader import get_events_for_day, create_calendar_event, update_calendar_event
@@ -57,13 +57,28 @@ def show_calendar(date: str):
     """
     return asyncio.run(mcp_show_calendar(date))
 
+@tool
+def web_search(query: str):
+    """
+    Search the internet for real-time or up-to-date information.
+
+    Use this tool when:
+    - The user asks about current events
+    - The user asks about news
+    - The user asks about policies, airline rules, visa rules
+    - The user asks about factual information not stored locally
+    - The user asks about weather or recent updates
+
+    Always provide a complete natural language query.
+    """
+    return asyncio.run(mcp_web_search(query))
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0
 )
 
-tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar, cancel_meeting_tool]
+tools = [mcp_availability, mcp_notify, flight_search_tool, show_calendar, cancel_meeting_tool, web_search]
 
 prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad", "chat_history"],
@@ -135,8 +150,6 @@ def process_message(user_input: str):
     lower = user_input.lower()
     # ✈ Handle flight requests directly via MCP (structured)
     if "flight" in user_input.lower() or "travel" in user_input.lower():
-        
-        import re
         
         match = re.search(
             r"from\s+([A-Za-z]{3})\s+to\s+([A-Za-z]{3})",

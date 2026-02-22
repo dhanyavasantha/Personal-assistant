@@ -8,6 +8,7 @@ import resend
 from amadeus import Client as AmadeusClient, ResponseError
 from dateutil import parser
 import json
+from tavily import TavilyClient
 
 def normalize_time(t: str) -> str:
     t = t.strip().upper()
@@ -298,3 +299,23 @@ def cancel_meeting_tool(date: str, start_time: str, end_time: str) -> str:
             return "Meeting cancelled successfully."
 
     return "No matching meeting found."
+
+#access to internet
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+@tool
+def web_search_tool(query: str) -> str:
+    """
+    Search the web for real-time information.
+    """
+    results = tavily.search(query=query, max_results=5)
+
+    formatted = []
+    for r in results.get("results", []):
+        formatted.append(
+            f"Title: {r.get('title')}\n"
+            f"URL: {r.get('url')}\n"
+            f"Content: {r.get('content')}\n"
+        )
+
+    return "\n\n".join(formatted)
